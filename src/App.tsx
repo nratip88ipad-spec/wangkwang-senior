@@ -23,6 +23,7 @@ import {
   periodList
 } from './data/initialData';
 import { Member, CollectionRecord, DeceasedRecord, CollectorRoute } from './types';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User } from './lib/firebase';
 
 // One-time automatic wipe of legacy mock data so the user gets a clean slate
 if (typeof window !== 'undefined' && localStorage.getItem('wk_clean_slate_v3') !== 'true') {
@@ -38,6 +39,32 @@ if (typeof window !== 'undefined' && localStorage.getItem('wk_clean_slate_v3') !
 }
 
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("ไม่สามารถเข้าสู่ระบบผ่าน Google ได้ กรุณาลองใหม่อีกครั้ง");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   // Load state from localStorage or initial data
   const [members, setMembers] = useState<Member[]>(() => {
     try {
@@ -360,6 +387,10 @@ export default function App() {
           onOpenAddMember={handleOpenAddMember}
           onOpenAddPayment={() => handleOpenAddPayment()}
           currentTabName={tabTitles[currentTab] || 'ระบบฌาปนกิจผู้สูงอายุ'}
+          user={user}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+          isCloudConnected={!!user}
         />
 
         <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
